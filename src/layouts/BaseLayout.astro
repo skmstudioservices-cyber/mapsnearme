@@ -1,8 +1,8 @@
 ---
 // ============================================================
-// BaseLayout — har page ka container. Scalable pattern:
+// BaseLayout — har page ka chrome. Scalable pattern:
 //  - <slot name="head" /> = WordPress-style head injection
-//    (JSON-LD, meta, analytics/ads scripts) per-page, compile-time safe
+//    (JSON-LD, meta, analytics/ads scripts) per page
 //  - <slot /> = page body
 //  - Design tokens global.css se — theming ek jagah
 // ============================================================
@@ -17,7 +17,7 @@ interface Props {
 
 const {
   title,
-  description = 'mapsnearme — India ka local business directory. Dentists, restaurants, hospitals, sab near me.',
+  description = 'mapsnearme — India ka premium local business directory. Verified businesses, precise mapping, direct connectivity.',
   canonical,
   noindex,
 } = Astro.props;
@@ -32,16 +32,22 @@ const {
     <meta name="description" content={description} />
     {canonical && <link rel="canonical" href={canonical} />}
     {noindex && <meta name="robots" content="noindex" />}
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>" />
-    <!-- Per-page head injection point: JSON-LD, extra meta, future analytics/ads -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📍</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <slot name="head" />
   </head>
   <body>
     <header class="site-header">
-      <div class="inner">
-        <a class="brand" href="/">🗺️ <b>maps</b>nearme</a>
+      <div class="inner container">
+        <a class="brand" href="/"><span class="mark">M</span>maps<b>near</b>me</a>
         <nav>
-          <a class="btn btn-ghost" href="/dashboard">Business Login</a>
+          <a class="link" href="/#top">Home</a>
+          <a class="link" href="/#categories">Categories</a>
+          <a class="link" href="/#cities">Cities</a>
+          <a class="btn btn-ghost" href="/dashboard">Login</a>
+          <a class="btn btn-gold" href="/dashboard/list">+ List Business</a>
         </nav>
       </div>
     </header>
@@ -51,11 +57,36 @@ const {
     </main>
 
     <footer class="site-footer">
-      <div class="inner">
-        <span>© {new Date().getFullYear()} mapsnearme — India business directory</span>
-        <nav>
-          <a href="/">Home</a>
-        </nav>
+      <div class="container">
+        <div class="foot-grid">
+          <div>
+            <a class="brand" href="/"><span class="mark">M</span>maps<b>near</b>me</a>
+            <p class="muted" style="margin: 14px 0 0; max-width: 34ch; font-size: 0.92rem;">
+              India's premium local business directory. Verified businesses with precise mapping and direct connectivity.
+            </p>
+            <p class="muted" style="font-size: 0.82rem; margin-top: 14px;">Made with ❤️ in India</p>
+          </div>
+          <div>
+            <h4>Explore</h4>
+            <a href="/#featured">Featured Listings</a>
+            <a href="/#categories">Categories</a>
+            <a href="/#cities">Cities</a>
+          </div>
+          <div>
+            <h4>Business</h4>
+            <a href="/dashboard/list">List Your Business</a>
+            <a href="/dashboard">Dashboard Login</a>
+          </div>
+          <div>
+            <h4>Support</h4>
+            <a href="/dashboard/advertise">Advertise with Us</a>
+            <a href="/dashboard/support">Contact Support</a>
+          </div>
+        </div>
+        <div class="foot-bottom">
+          <span>© {new Date().getFullYear()} mapsnearme — India business directory</span>
+          <span>Growing across India 🇮🇳</span>
+        </div>
       </div>
     </footer>
   </body>
