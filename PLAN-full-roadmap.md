@@ -3,6 +3,10 @@
 **For:** AI coding agents (Antigravity) + the human owner. Branch: `antigravity-build`.
 **One-line goal:** India's premium verified business directory — an almost exact clone of the locked Vercel design, live on Cloudflare free tier (~₹0), with a vinext dashboard, near-me search, and SEO/ads flywheel.
 
+**STANDING RULES (owner-mandated):**
+1. **All databases in India region** — Supabase = Mumbai (ap-south-1); Cloudflare D1 = `--location apac` (India is not offered for D1, apac/Singapore is the closest allowed); KV = global edge (no region concept). Never create a DB in a US/EU region.
+2. **Naming convention:** every resource name identifies its type — D1 databases end with `-db` (e.g. `pincode-india-db`, `mapsnearme-db`), KV namespaces end with `_KV` (e.g. `SESSION_KV`, `MAPSNEARME_ADS_KV`).
+
 ---
 
 ## 0. Design reference — CLONE THIS
@@ -25,19 +29,19 @@ Screenshots of the reference design: `digipincode-india` repo, branch `design-ca
 - **RPC: `nearby_businesses`** — PostGIS stored function (lat/lng -> nearby listings) for /near-me
 - Tables reserved for Phase 2 (dashboard, RLS-protected): `leads`, `feedback`, `leaderboard_scores`
 - All access goes through `src/lib/data.ts` — the ONLY file that talks to the DB (swap-friendly later)
-- Secondary project `mapsnearme` (ref hfmkznptehdhtgsuwzri) exists for a future migration — do NOT use it yet
+- Secondary project `mapsnearme` (ref hfmkznptehdhtgsuwzri) exists for a future migration — do NOT use it yet. If ever recreated, choose the **Mumbai (ap-south-1)** region.
 
-### Cloudflare (all free tier)
+### Cloudflare (all free tier; apac region, -db/_KV naming)
 - Pages: `mapsnearme` → **https://mapsnearme.pages.dev** (this repo; env vars already set), `dashboardmapsnearme` (dashboard repo, Phase 2)
 - Worker (reverse proxy): `mapsnearme` → **https://mapsnearme.india-in.workers.dev** (custom domain later)
-- D1 `mapsnearme` (id 6c878839-e0ab-4a9d-b417-9b6cf189d0fb) — reserved for ads + internal analytics events
-- KV `MAPSNEARME_ADS` (id 293bfcfd31c64edab87964ad1de5e27e) — ad slot content cache
-- KV `SESSION` (id 712a25b4ffc54a308d305e22be3b658c) — Astro Cloudflare adapter sessions (binding in wrangler.jsonc)
-- D1 `pincode-india` — belongs to the **digipincode-india** repo (see cross-links)
+- D1 `mapsnearme-db` (id 03a74322-da9e-485d-af1c-e73249d19039, **apac**) — reserved for ads + internal analytics events (old empty `mapsnearme` DB deleted)
+- KV `MAPSNEARME_ADS_KV` (id 5d3d1232c58e489c8aa016664ca22820) — ad slot content cache (replaces old MAPSNEARME_ADS)
+- KV `SESSION_KV` (id 5356a2ee926848c3a705d1c94d9a542f) — Astro Cloudflare adapter sessions (binding name stays `SESSION` in wrangler.jsonc)
+- D1 `pincode-india-db` (id 74274a3f-9fca-42ec-9fbf-c707ffbc56a4, **apac**) — belongs to the **digipincode-india** repo (see cross-links); being seeded via the d1-apply workflow. The old `pincode-india` DB (wnam) stays live only until the apac DB is fully seeded, then the Worker binding flips and the old DB is deleted.
 - **Deploy:** this repo has NO Cloudflare secrets. Deploys happen via `bootstrap-mapsnearme.yml` in the digipincode-india repo (workflow_dispatch). Do not attempt to deploy from here.
 
 ### Partner site
-- **digipincode** (pincode/village/DigiPIN directory) → https://digipincode.india.in.workers.dev — repo `digipincode-india`. Its D1 `pincode-india` now has all-India pincodes + village lists (populated from our KB datasets). Cross-link everything (WS4 of PLAN-phase3.md).
+- **digipincode** (pincode/village/DigiPIN directory) → https://digipincode.india-in.workers.dev — repo `digipincode-india`. Its D1 has all-India pincodes + village lists (populated from our KB datasets). Cross-link everything (WS4 of PLAN-phase3.md).
 
 ## 2. Analytics plan (internal + external)
 
@@ -51,7 +55,7 @@ Goal: know what users search and click, then feed it back into content.
    - `contact_click` {business_id, type: call|whatsapp|website|direction}
    - `category_browse` / `city_browse` — category/city pages
 3. **Google Search Console**: verify mapsnearme.pages.dev (owner action; GSC account already in use), submit `/sitemap.xml`, monitor queries. Monthly: export GSC queries → they become the keyword priority list for new city/category content (same loop as the pincode site's `seo/gsc-pincode-keywords.csv`).
-4. **Internal event log** (Phase 2+): D1 table `events` (type, business_id, meta, created_at) written via a small `/api/track` endpoint — powers "trending near you" and business-owner lead quality signals. Keep writes tiny; respect free-tier limits.
+4. **Internal event log** (Phase 2+): D1 table `events` in `mapsnearme-db` (type, business_id, meta, created_at) written via a small `/api/track` endpoint — powers "trending near you" and business-owner lead quality signals. Keep writes tiny; respect free-tier limits.
 
 ## 3. Phases
 
@@ -77,9 +81,10 @@ Supabase live data (158 businesses / 32 cities / 16 categories), dark+gold premi
 - Structured data: LocalBusiness JSON-LD on /b/[id], BreadcrumbList everywhere
 
 ### Phase 5 — Monetize
-- Ad slots served from KV `MAPSNEARME_ADS` (self-serve, no third-party dependency at first)
+- Ad slots served from KV `MAPSNEARME_ADS_KV` (self-serve, no third-party dependency at first)
 - Google AdSense once traffic justifies it (privacy page already ready)
 - Featured/verified business subscriptions via the dashboard (leads + leaderboard as proof)
 
 ## 4. Rules (recap — full list in AGENTS.md)
 - Astro 5 + adapter ^12 LOCKED. Design LOCKED. data.ts is the only DB file. Free tier only. No data.gov.in / attribution-required datasets. Deploy only from main merge via the digipincode-india repo workflows.
+- Databases only in India region (Supabase Mumbai / D1 apac), names end with -db or _KV.
