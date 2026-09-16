@@ -1,0 +1,50 @@
+---
+// MapView — reusable Leaflet + OSM map (free, no API key).
+// CDN se load hota hai — build pe koi dependency nahi, cost 0.
+// Props: points = [{lat, lng, title, url}]
+interface MapPoint {
+  lat: number;
+  lng: number;
+  title: string;
+  url?: string;
+}
+interface Props {
+  points: MapPoint[];
+  height?: string;
+  zoom?: number;
+}
+const { points, height = '360px', zoom = 12 } = Astro.props;
+const validPoints = points.filter((p) => typeof p.lat === 'number' && typeof p.lng === 'number');
+const center = validPoints.length
+  ? [validPoints[0].lat, validPoints[0].lng]
+  : [28.6139, 77.209]; // Delhi default
+---
+
+{validPoints.length === 0 ? (
+  <div class="map-wrap"><div class="empty" style={`height:${height};display:flex;align-items:center;justify-content:center;`}>Map data available nahi hai</div></div>
+) : (
+  <div class="map-wrap">
+    <div id="map" style={`height:${height};`}></div>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script is:inline define:vars={{ validPoints, center, zoom }}>
+      const map = L.map('map').setView(center, zoom);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+      for (const p of validPoints) {
+        const marker = L.marker([p.lat, p.lng]).addTo(map);
+        if (p.url) {
+          marker.bindPopup(`<a href="${p.url}">${p.title}</a>`);
+        } else {
+          marker.bindPopup(p.title);
+        }
+      }
+      if (validPoints.length > 1) {
+        map.fitBounds(L.latLngBounds(validPoints.map((p) => [p.lat, p.lng])).pad(0.1));
+      }
+    </script>
+  </div>
+)
+}
