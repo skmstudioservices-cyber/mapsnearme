@@ -1,0 +1,62 @@
+---
+// ============================================================
+// BaseLayout — har page ka container. Scalable pattern:
+//  - <slot name="head" /> = WordPress-style head injection
+//    (JSON-LD, meta, analytics/ads scripts) per-page, compile-time safe
+//  - <slot /> = page body
+//  - Design tokens global.css se — theming ek jagah
+// ============================================================
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  canonical?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'mapsnearme — India ka local business directory. Dentists, restaurants, hospitals, sab near me.',
+  canonical,
+  noindex,
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>" />
+    <!-- Per-page head injection point: JSON-LD, extra meta, future analytics/ads -->
+    <slot name="head" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="inner">
+        <a class="brand" href="/">🗺️ <b>maps</b>nearme</a>
+        <nav>
+          <a class="btn btn-ghost" href="/dashboard">Business Login</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="inner">
+        <span>© {new Date().getFullYear()} mapsnearme — India business directory</span>
+        <nav>
+          <a href="/">Home</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>
