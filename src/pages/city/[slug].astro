@@ -11,7 +11,18 @@ if (!city) {
   return Astro.redirect('/?notfound=city');
 }
 const businesses = await getBusinesses(Astro, { citySlug: slug, limit: 48 });
-const mapPoints = businesses.map((b) => ({ lat: b.latitude ?? 0, lng: b.longitude ?? 0, title: b.name, url: `/b/${b.id}` })).filter((p) => p.lat !== 0 && p.lng !== 0);
+const mapPoints = businesses
+  .filter((b) => typeof b.latitude === 'number' && typeof b.longitude === 'number')
+  .map((b) => ({ lat: b.latitude as number, lng: b.longitude as number, title: b.name, url: `/b/${b.id}` }));
+
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://mapsnearme.pages.dev/' },
+    { '@type': 'ListItem', position: 2, name: city.name, item: `https://mapsnearme.pages.dev/city/${city.slug}` },
+  ],
+});
 ---
 
 <BaseLayout
@@ -19,16 +30,7 @@ const mapPoints = businesses.map((b) => ({ lat: b.latitude ?? 0, lng: b.longitud
   description={`Top businesses in ${city.name}${city.state ? `, ${city.state}` : ''} — restaurants, doctors, hotels, services. Find verified businesses near you on mapsnearme.`}
   canonical={`https://mapsnearme.pages.dev/city/${city.slug}`}
 >
-  <slot name="head" slot="head">
-    <script type="application/ld+json" set:html={JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://mapsnearme.pages.dev/' },
-        { '@type': 'ListItem', position: 2, name: city.name, item: `https://mapsnearme.pages.dev/city/${city.slug}` },
-      ],
-    })} />
-  </slot>
+  <script slot="head" type="application/ld+json" set:html={jsonLd} />
 
   <section class="section">
     <h1 style="margin:16px 0 4px;">Businesses in {city.name}</h1>
