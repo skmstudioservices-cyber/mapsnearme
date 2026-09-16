@@ -1,0 +1,16 @@
+---
+// TODO(Antigravity): implement per PLAN-phase3.md — WS1 (URGENT: homepage form
+// posts to /search which currently 404s)
+// 1. Read q + loc from Astro.url.searchParams
+// 2. Add searchBusinesses(Astro, {q, loc, limit}) to src/lib/data.ts (see plan
+//    for the exact PostGREST or=...ilike pattern and loc->city_id resolution)
+// 3. Render: search pill (copy from index.astro, pre-filled), result count,
+//    results grid of <BizCard>, empty state + popular categories/cities links
+// 4. SSR everything; title `${q || 'Search'}${loc ? ' in ' + loc : ''} — mapsnearme`
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BizCard from '../components/BizCard.astro';
+import { searchBusinesses, getCategories, getCities } from '../lib/data';
+---
+<BaseLayout title="Search — mapsnearme">
+  <!-- TODO: implement -->
+</BaseLayout>
