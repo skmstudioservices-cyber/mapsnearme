@@ -1,0 +1,12 @@
+{
+  "name": "mapsnearme",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "dist",
+  "kv_namespaces": [
+    {
+      "binding": "SESSION",
+      "id": "712a25b4ffc54a308d305e22be3b658c"
+    }
+  ]
+}
