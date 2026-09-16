@@ -1,0 +1,30 @@
+---
+// /category/[slug] — category page: businesses across all cities (pSEO template)
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BizCard from '../../components/BizCard.astro';
+import { getCategoryBySlug, getBusinesses } from '../../lib/data';
+
+const { slug } = Astro.params;
+const category = await getCategoryBySlug(Astro, slug ?? '');
+if (!category) {
+  return Astro.redirect('/?notfound=category');
+}
+const businesses = await getBusinesses(Astro, { categorySlug: slug, limit: 48 });
+---
+
+<BaseLayout
+  title={`${category.name} in India — Directory of ${category.name} Near You | mapsnearme`}
+  description={`Best ${category.name.toLowerCase()} in India — verified listings with ratings, phone numbers, addresses and maps. Find ${category.name.toLowerCase()} near you.`}
+  canonical={`https://mapsnearme.pages.dev/category/${category.slug}`}
+>
+  <section class="section">
+    <h1 style="margin:16px 0 4px;">{category.icon ?? ''} {category.name} in India</h1>
+    {businesses.length > 0 ? (
+      <div class="grid grid-biz">
+        {businesses.map((b) => <BizCard biz={b} />)}
+      </div>
+    ) : (
+      <div class="empty">Is category mein abhi listings nahi hain.</div>
+    )}
+  </section>
+</BaseLayout>
