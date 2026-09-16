@@ -1,32 +1,33 @@
 ---
-// BizCard — reusable business card component.
-// Grid me kahin bhi use hota hai (home, city, category, search results).
+// BizCard — premium business card (VERIFIED tag, gold rating, cover block)
 import type { Business } from '../lib/data';
 
 interface Props {
   biz: Business;
 }
 const { biz } = Astro.props;
+const city = biz.city?.name;
+const cat = biz.category?.name;
+const rating = typeof biz.avg_rating === 'number' && biz.avg_rating > 0 ? biz.avg_rating.toFixed(1) : null;
 ---
 
-<article class="card biz-card">
-  <div class="row">
-    <div>
-      <h3><a href={`/b/${biz.id}`}>{biz.name}</a></h3>
-      {biz.category?.name && <div class="muted">{biz.category.name}{biz.city ? ` · ${biz.city.name}` : ''}</div>}
-      {biz.tagline && <div class="muted">{biz.tagline}</div>}
-      {biz.address && <div class="muted">📍 {biz.address}</div>}
+<a class="card biz-card" href={`/b/${biz.id}`}>
+  <div class="biz-cover">{biz.logo_url ? <img src={biz.logo_url} alt="" loading="lazy" /> : <span>📍</span>}</div>
+  <div class="biz-body">
+    <span class="biz-tag">{biz.is_verified ? 'Verified Business' : 'Listing'}</span>
+    <h3>{biz.name}</h3>
+    <div class="biz-meta">
+      {rating && (
+        <>
+          <span class="biz-rating">★ {rating}</span>
+          {biz.review_count != null && <span>({biz.review_count})</span>}
+        </>
+      )}
+      {cat && <span>·</span>}
+      {cat && <span>{cat}</span>}
+      {city && <span>·</span>}
+      {city && <span>{city}</span>}
     </div>
-    {typeof biz.avg_rating === 'number' && biz.avg_rating > 0 && (
-      <div class="rating">★ {Number(biz.avg_rating).toFixed(1)}</div>
-    )}
+    {biz.tagline && <div class="muted" style="font-size: 0.86rem">{biz.tagline}</div>}
   </div>
-  <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
-    {biz.is_verified && <span class="badge">✔ Verified</span>}
-    {biz.is_featured && <span class="badge feat">★ Featured</span>}
-    {biz.phone && <a class="btn btn-ghost" href={`tel:${biz.phone}`}>📞 Call</a>}
-    {biz.whatsapp && (
-      <a class="btn btn-ghost" href={`https://wa.me/${biz.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener">WhatsApp</a>
-    )}
-  </div>
-</article>
+</a>
