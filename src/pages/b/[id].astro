@@ -1,0 +1,91 @@
+---
+// /b/[id] — business listing page (LocalBusiness JSON-LD + map + actions)
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MapView from '../../components/MapView.astro';
+import { getBusinessById } from '../../lib/data';
+
+const { id } = Astro.params;
+const biz = await getBusinessById(Astro, id ?? '');
+if (!biz) {
+  return Astro.redirect('/?notfound=business');
+}
+
+const hasCoords = typeof biz.latitude === 'number' && typeof biz.longitude === 'number';
+const jsonLd = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: biz.name,
+  description: biz.description ?? biz.tagline ?? undefined,
+  ...(biz.phone ? { telephone: biz.phone } : {}),
+  ...(biz.website ? { url: biz.website } : {}),
+  ...(hasCoords
+    ? {
+        geo: { '@type': 'GeoCoordinates', latitude: biz.latitude, longitude: biz.longitude },
+      }
+    : {}),
+  ...(biz.address || biz.city
+    ? {
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: biz.address ?? undefined,
+          addressLocality: biz.city?.name,
+          ...(biz.pin_code ? { postalCode: biz.pin_code } : {}),
+          addressCountry: 'IN',
+        },
+      }
+    : {}),
+  ...(typeof biz.avg_rating === 'number' && biz.avg_rating > 0
+    ? {
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: biz.avg_rating,
+          reviewCount: biz.review_count ?? 1,
+        },
+      }
+    : {}),
+});
+---
+
+<BaseLayout
+  title={`${biz.name}${biz.city ? ` — ${biz.city.name}` : ''} | mapsnearme`}
+  description={biz.description ?? biz.tagline ?? `${biz.name} — contact, address, map, reviews. Find ${biz.name} near you.`}
+  canonical={`https://mapsnearme.pages.dev/b/${biz.id}`}
+>
+  <script slot="head" type="application/ld+json" set:html={jsonLd} />
+
+  <article class="listing section">
+    <div class="card">
+      <h1>
+        {biz.name}
+        {biz.is_verified && <span class="badge">✔ Verified</span>}
+      </h1>
+      <div class="meta">
+        {biz.category?.name && <a href={`/category/${biz.category.slug}`}>{biz.category.name}</a>}
+        {biz.city?.name && <> · <a href={`/city/${biz.city.slug}`}>{biz.city.name}</a></>}
+        {typeof biz.avg_rating === 'number' && biz.avg_rating > 0 && (
+          <> · <span class="rating">★ {Number(biz.avg_rating).toFixed(1)} ({biz.review_count ?? 0} reviews)</span></>
+        )}
+      </div>
+      {biz.tagline && <p style="margin:12px 0 0;"><b>{biz.tagline}</b></p>}
+      {biz.description && <p>{biz.description}</p>}
+      {biz.address && <p class="meta">📍 {biz.address}{biz.pin_code ? `, ${biz.pin_code}` : ''}</p>}
+
+      <div class="actions">
+        {biz.phone && <a class="btn" href={`tel:${biz.phone}`}>📞 Call {biz.phone}</a>}
+        {biz.whatsapp && (
+          <a class="btn btn-ghost" href={`https://wa.me/${biz.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener">WhatsApp</a>
+        )}
+        {biz.website && <a class="btn btn-ghost" href={biz.website} target="_blank" rel="noopener">Website</a>}
+        {hasCoords && (
+          <a class="btn btn-ghost" href={`https://www.google.com/maps/dir/?api=1&destination=${biz.latitude},${biz.longitude}`} target="_blank" rel="noopener">Directions</a>
+        )}
+      </div>
+    </div>
+
+    {hasCoords && (
+      <div class="section">
+        <MapView points={[{ lat: biz.latitude as number, lng: biz.longitude as number, title: biz.name }]} height="300px" zoom={15} />
+      </div>
+    )}
+  </article>
+</BaseLayout>
