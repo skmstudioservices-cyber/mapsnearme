@@ -1,51 +1,102 @@
 ---
-// Homepage — hero + search + cities + categories (data layer se)
+// Homepage — premium design (ref: SKM Studio Maps Vercel preview)
+// hero + search pill + stats + categories + featured + cities (data layer se)
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getCities, getCategories, dataReady } from '../lib/data';
+import BizCard from '../components/BizCard.astro';
+import { getCities, getCategories, getBusinesses, countBusinesses, dataReady } from '../lib/data';
 
 const ready = dataReady(Astro);
-const [cities, categories] = ready ? await Promise.all([getCities(Astro), getCategories(Astro)]) : [[], []];
+const [cities, categories, featured, bizCount] = ready
+  ? await Promise.all([
+      getCities(Astro),
+      getCategories(Astro),
+      getBusinesses(Astro, { limit: 6 }),
+      countBusinesses(Astro),
+    ])
+  : [[], [], [], 0];
 ---
 
 <BaseLayout
-  title="mapsnearme — India Local Business Directory | Find Businesses Near Me"
-  description="India ka local business directory — dentists, restaurants, hospitals, hotels sab near you. Free listings, verified businesses."
+  title="mapsnearme — India's Premium Business Directory | Find Businesses Near Me"
+  description="India ka premium local business directory — verified dentists, restaurants, hospitals, hotels near you. Free listings, precise maps."
   canonical="https://mapsnearme.pages.dev/"
 >
-  <section class="hero">
-    <h1>Find businesses <span style="color:var(--primary)">near you</span></h1>
-    <p>India ka local search — {cities.length > 0 ? `${cities.length}+ cities` : 'cities'} · {categories.length > 0 ? `${categories.length}+ categories` : 'categories'} · free</p>
-    <form class="search-form" action="/search" method="get">
-      <input type="search" name="q" placeholder="Dentist, restaurant, hospital..." aria-label="Search" />
-      <button class="btn" type="submit">Search</button>
+  <section class="hero" id="top">
+    <span class="badge-pill">● Pre-Launch — Exclusive Access</span>
+    <h1>Find Verified <span class="accent">Businesses</span> Across India</h1>
+    <p class="sub">
+      The premium directory for Delhi, NCR, Gorakhpur and beyond. Discover top-rated
+      services with precise mapping and direct connectivity.
+    </p>
+    <form class="search-pill" action="/search" method="get">
+      <input type="search" name="q" placeholder="What are you looking for?" aria-label="Search" />
+      <span class="divider"></span>
+      <input type="text" name="loc" placeholder="Delhi / NCR" aria-label="Location" />
+      <button class="btn btn-gold" type="submit">Search Now</button>
     </form>
+    <div class="stats">
+      <div class="stat">
+        <div class="num">{bizCount > 0 ? `${bizCount}+` : '—'}</div>
+        <div class="lbl">Verified Listings</div>
+      </div>
+      <div class="stat">
+        <div class="num">{cities.length > 0 ? `${cities.length}+` : '—'}</div>
+        <div class="lbl">Cities Covered</div>
+      </div>
+      <div class="stat">
+        <div class="num">{categories.length > 0 ? categories.length : '—'}</div>
+        <div class="lbl">Main Categories</div>
+      </div>
+      <div class="stat">
+        <div class="num">100%</div>
+        <div class="lbl">Free to Browse</div>
+      </div>
+    </div>
   </section>
 
-  <section class="section">
-    <h2>Popular categories</h2>
+  <section class="section" id="categories">
+    <p class="eyebrow">Browse by Category</p>
+    <h2>Explore Popular Services</h2>
     {categories.length > 0 ? (
       <div class="grid grid-cats">
-        {categories.slice(0, 16).map((c) => (
+        {categories.slice(0, 18).map((c) => (
           <a class="card cat-tile" href={`/category/${c.slug}`}>
-            <span class="icon">{c.icon ?? '📁'}</span>
+            <span class="icon">{c.icon ?? '🏷️'}</span>
             <strong>{c.name}</strong>
           </a>
         ))}
       </div>
     ) : (
       <div class="empty">
-        Categories setup ho rahi hain.<br />
-        <span class="muted">(SUPABASE_URL + SUPABASE_ANON_KEY env vars set karo — CF Pages → Settings → Environment variables)</span>
+        Categories setup ho rahi hain.
+        <br />
+        <span class="muted">(data-layer env vars missing — CF Pages → Settings → Environment variables)</span>
       </div>
     )}
   </section>
 
-  <section class="section">
-    <h2>Cities</h2>
+  <section class="section" id="featured">
+    <p class="eyebrow">Featured Listings</p>
+    <h2>Verified Destinations</h2>
+    {featured.length > 0 ? (
+      <div class="grid grid-biz">
+        {featured.map((b) => <BizCard biz={b} />)}
+      </div>
+    ) : (
+      <div class="empty">Verified businesses abhi add ho rahi hain. Kuch hi dinon mein live.</div>
+    )}
+  </section>
+
+  <section class="section" id="cities">
+    <p class="eyebrow">Browse by City</p>
+    <h2>Cities We Cover</h2>
     {cities.length > 0 ? (
       <div class="grid grid-cities">
         {cities.slice(0, 32).map((c) => (
-          <a class="card" href={`/city/${c.slug}`}><strong>{c.name}</strong>{c.state ? <div class="muted">{c.state}</div> : null}</a>
+          <a class="card city-tile" href={`/city/${c.slug}`}>
+            <strong>{c.name}</strong>
+            {c.state && <span class="muted">{c.state}</span>}
+          </a>
         ))}
       </div>
     ) : (
