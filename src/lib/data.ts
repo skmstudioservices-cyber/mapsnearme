@@ -139,3 +139,14 @@ export async function searchBusinessesNear(
     category: undefined,
   })) as unknown as Business[];
 }
+
+// Exact total count via PostGREST Prefer: count=exact (content-range header)
+export async function countBusinesses(Astro: EnvLike): Promise<number> {
+  const r = await sb(Astro, 'businesses?select=id&limit=1', {
+    headers: { Prefer: 'count=exact' },
+  });
+  if (!r || !r.ok) return 0;
+  const cr = r.headers.get('content-range'); // e.g. "0-0/158"
+  const total = cr?.split('/')[1];
+  return total ? Number(total) || 0 : 0;
+}
