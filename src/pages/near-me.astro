@@ -1,0 +1,17 @@
+---
+// TODO(Antigravity): implement per PLAN-phase3.md — WS2
+// /near-me — geolocation-based nearby businesses
+// 1. Add getNearbyBusinesses(Astro, lat, lng, limit) to src/lib/data.ts
+//    (POST /rest/v1/rpc/nearby_businesses — verify the RPC signature first)
+// 2. If ?lat&lng present -> SSR nearby results (BizCard grid, distance if the
+//    RPC returns it, deep link /b/{id})
+// 3. If no coords: "Use my location" gold button -> navigator.geolocation ->
+//    redirect to /near-me?lat=..&lng=.. (keeps results SSR/SEO-friendly)
+// 4. Fallback state (denied/unsupported): popular cities links + search form
+import BaseLayout from '../layouts/BaseLayout.astro';
+import BizCard from '../components/BizCard.astro';
+import { getNearbyBusinesses, getCities } from '../lib/data';
+---
+<BaseLayout title="Businesses Near Me — mapsnearme">
+  <!-- TODO: implement -->
+</BaseLayout>
