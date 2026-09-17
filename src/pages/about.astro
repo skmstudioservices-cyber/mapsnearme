@@ -1,11 +1,55 @@
 ---
-// TODO(Antigravity): implement per PLAN-phase3.md — WS3
-// /about — static page, BaseLayout, premium dark+gold design.
-// Content: what mapsnearme is (India's premium verified business directory),
-// how listings get verified, contact (skmstudio.services@gmail.com), and a
-// CTA to list a business. Add link in BaseLayout footer.
+// /about — About Us page (WS3)
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="About — mapsnearme">
-  <!-- TODO: implement -->
+
+<BaseLayout
+  title="About Us — mapsnearme | India's Premium Business Directory"
+  description="Learn about mapsnearme, our mission to index verified Indian businesses, and how we empower local commerce with precise mapping."
+  canonical="https://mapsnearme.pages.dev/about"
+>
+  <section class="section" style="max-width: 800px; margin: 0 auto; padding-top: 48px;">
+    <p class="eyebrow">Our Story & Mission</p>
+    <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 8px 0 24px; font-weight: 800;">
+      About <span style="color: var(--gold);">mapsnearme</span>
+    </h1>
+
+    <div class="card pad" style="margin-bottom: 32px;">
+      <h2 style="font-size: 1.4rem; margin-top: 0; color: var(--gold);">India's Premium Verified Business Directory</h2>
+      <p style="font-size: 1.05rem; line-height: 1.8;">
+        <strong>mapsnearme</strong> was built to solve a persistent challenge for consumers across India: finding genuine, verified local businesses with accurate physical locations, direct phone numbers, and dependable contact details.
+      </p>
+      <p style="font-size: 1.05rem; line-height: 1.8;">
+        From Delhi-NCR and Gorakhpur to Tier-2 and Tier-3 commercial hubs, we connect customers directly with verified medical clinics, top-rated dining spots, automobile specialists, and essential daily services.
+      </p>
+    </div>
+
+    <div class="card pad" style="margin-bottom: 32px;">
+      <h3 style="font-size: 1.25rem; margin-top: 0;">How Verification Works</h3>
+      <p style="line-height: 1.7;">
+        Listings carrying our <strong>✔ Verified</strong> badge undergo validation checks:
+      </p>
+      <ul style="padding-left: 20px; line-height: 1.8; color: var(--muted);">
+        <li>Physical geographic coordinates verification.</li>
+        <li>Active phone and WhatsApp operational status.</li>
+        <li>Registration or commercial operational check.</li>
+      </ul>
+    </div>
+
+    <div class="card pad" style="margin-bottom: 32px; background: radial-gradient(circle at 100% 0%, rgba(217, 165, 60, 0.08), transparent 70%);">
+      <h3 style="font-size: 1.25rem; margin-top: 0;">Get In Touch</h3>
+      <p style="line-height: 1.7; margin-bottom: 16px;">
+        Have questions, partnership inquiries, or listing correction requests? Contact our team directly:
+      </p>
+      <p style="font-size: 1.1rem; font-weight: 600;">
+        ✉️ <a href="mailto:skmstudio.services@gmail.com" style="color: var(--gold);">skmstudio.services@gmail.com</a>
+      </p>
+    </div>
+
+    <div style="text-align: center; margin-top: 48px;">
+      <a class="btn btn-gold" href="/dashboard/list" style="font-size: 1.05rem; padding: 12px 28px;">
+        + List Your Business Today
+      </a>
+    </div>
+  </section>
 </BaseLayout>

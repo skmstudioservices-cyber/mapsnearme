@@ -140,6 +140,39 @@ export async function searchBusinessesNear(
   })) as unknown as Business[];
 }
 
+// Alias per PLAN-phase3.md WS2
+export const getNearbyBusinesses = searchBusinessesNear;
+
+// WS1: Search businesses by query text and optional location
+export async function searchBusinesses(
+  Astro: EnvLike,
+  opts: { q?: string; loc?: string; limit?: number } = {}
+): Promise<Business[]> {
+  const limit = opts.limit ?? 48;
+  let query = `businesses?select=${BIZ_SELECT}&order=is_verified.desc,avg_rating.desc.nullslast&limit=${limit}`;
+
+  if (opts.q && opts.q.trim()) {
+    const term = encodeURIComponent(`*${opts.q.trim()}*`);
+    query += `&or=(name.ilike.${term},tagline.ilike.${term},description.ilike.${term})`;
+  }
+
+  if (opts.loc && opts.loc.trim()) {
+    const locTerm = opts.loc.trim();
+    // Resolve against cities first
+    const rCity = await sb(Astro, `cities?select=id&name=ilike.*${encodeURIComponent(locTerm)}*&limit=1`);
+    if (rCity && rCity.ok) {
+      const matchedCities = (await rCity.json()) as Array<{ id: string }>;
+      if (matchedCities.length > 0 && matchedCities[0]?.id) {
+        query += `&city_id=eq.${matchedCities[0].id}`;
+      }
+    }
+  }
+
+  const r = await sb(Astro, query);
+  if (!r || !r.ok) return [];
+  return (await r.json()) as Business[];
+}
+
 // Exact total count via PostGREST Prefer: count=exact (content-range header)
 export async function countBusinesses(Astro: EnvLike): Promise<number> {
   const r = await sb(Astro, 'businesses?select=id&limit=1', {
@@ -150,3 +183,5 @@ export async function countBusinesses(Astro: EnvLike): Promise<number> {
   const total = cr?.split('/')[1];
   return total ? Number(total) || 0 : 0;
 }
+
+

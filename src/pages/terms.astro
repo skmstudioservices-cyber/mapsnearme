@@ -1,10 +1,44 @@
 ---
-// TODO(Antigravity): implement per PLAN-phase3.md — WS3
-// /terms — static terms of use, BaseLayout, premium design.
-// Cover: directory service basis (info may change, verify before transacting),
-// business listings & user submissions, limitation of liability, contact.
+// /terms — Terms of Service (WS3)
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-<BaseLayout title="Terms of Use — mapsnearme">
-  <!-- TODO: implement -->
+
+<BaseLayout
+  title="Terms of Service — mapsnearme"
+  description="Terms and conditions for utilizing the mapsnearme business directory platform."
+  canonical="https://mapsnearme.pages.dev/terms"
+>
+  <section class="section" style="max-width: 800px; margin: 0 auto; padding-top: 48px;">
+    <p class="eyebrow">Legal & Terms</p>
+    <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 8px 0 24px; font-weight: 800;">
+      Terms of <span style="color: var(--gold);">Service</span>
+    </h1>
+
+    <div class="card pad" style="margin-bottom: 28px; line-height: 1.8;">
+      <p><strong>Last Updated:</strong> September 2026</p>
+      <p>
+        By accessing or browsing <strong>mapsnearme</strong>, you agree to comply with and be bound by the following terms of use.
+      </p>
+
+      <h2 style="font-size: 1.3rem; margin-top: 24px; color: var(--gold);">1. Directory Information</h2>
+      <p>
+        mapsnearme provides an informational directory designed to assist consumers in identifying local providers. While we strive to verify contact numbers, business operational status, and geographic coordinates, operating hours and details may change without prior notice. We encourage users to verify details directly with the provider before transacting.
+      </p>
+
+      <h2 style="font-size: 1.3rem; margin-top: 24px; color: var(--gold);">2. Listing Ownership & Corrections</h2>
+      <p>
+        Business owners may claim their listing or submit corrections to ensure accurate customer connectivity. Submitting false, malicious, or deceptive business details is strictly prohibited.
+      </p>
+
+      <h2 style="font-size: 1.3rem; margin-top: 24px; color: var(--gold);">3. Limitation of Liability</h2>
+      <p>
+        In no event shall mapsnearme or its operators be held liable for any disputes, damages, or claims arising from consumer interactions, agreements, or purchases conducted with listed third-party businesses.
+      </p>
+
+      <h2 style="font-size: 1.3rem; margin-top: 24px; color: var(--gold);">4. Governing Law</h2>
+      <p>
+        These Terms are governed by and construed in accordance with the laws of India. For disputes or general legal correspondence, reach us at <a href="mailto:skmstudio.services@gmail.com" style="color: var(--gold);">skmstudio.services@gmail.com</a>.
+      </p>
+    </div>
+  </section>
 </BaseLayout>

@@ -1,16 +1,119 @@
 ---
-// TODO(Antigravity): implement per PLAN-phase3.md — WS1 (URGENT: homepage form
-// posts to /search which currently 404s)
-// 1. Read q + loc from Astro.url.searchParams
-// 2. Add searchBusinesses(Astro, {q, loc, limit}) to src/lib/data.ts (see plan
-//    for the exact PostGREST or=...ilike pattern and loc->city_id resolution)
-// 3. Render: search pill (copy from index.astro, pre-filled), result count,
-//    results grid of <BizCard>, empty state + popular categories/cities links
-// 4. SSR everything; title `${q || 'Search'}${loc ? ' in ' + loc : ''} — mapsnearme`
+// /search — search results page (WS1)
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BizCard from '../components/BizCard.astro';
-import { searchBusinesses, getCategories, getCities } from '../lib/data';
+import { searchBusinesses, getCategories, getCities, dataReady } from '../lib/data';
+
+const q = Astro.url.searchParams.get('q')?.trim() ?? '';
+const loc = Astro.url.searchParams.get('loc')?.trim() ?? '';
+
+const ready = dataReady(Astro);
+const [results, categories, cities] = ready
+  ? await Promise.all([
+      (q || loc) ? searchBusinesses(Astro, { q, loc, limit: 48 }) : Promise.resolve([]),
+      getCategories(Astro),
+      getCities(Astro),
+    ])
+  : [[], [], []];
+
+const pageTitle = q
+  ? `${q}${loc ? ' in ' + loc : ''} — Search | mapsnearme`
+  : loc
+    ? `Businesses in ${loc} — Search | mapsnearme`
+    : 'Search Businesses Across India — mapsnearme';
+
+const pageDesc = `Find verified businesses matching "${q || 'all'}"${loc ? ' in ' + loc : ''}. Contact numbers, ratings, directions, and reviews on mapsnearme.`;
 ---
-<BaseLayout title="Search — mapsnearme">
-  <!-- TODO: implement -->
+
+<BaseLayout
+  title={pageTitle}
+  description={pageDesc}
+  canonical="https://mapsnearme.pages.dev/search"
+>
+  <section class="section" style="padding-top: 32px;">
+    <!-- Search Pill Form (prefilled) -->
+    <form class="search-pill" action="/search" method="get" style="margin-bottom: 32px;">
+      <input
+        type="search"
+        name="q"
+        placeholder="What are you looking for?"
+        aria-label="Search"
+        value={q}
+      />
+      <span class="divider"></span>
+      <input
+        type="text"
+        name="loc"
+        placeholder="Delhi / NCR"
+        aria-label="Location"
+        value={loc}
+      />
+      <button class="btn btn-gold" type="submit">Search Now</button>
+    </form>
+
+    <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <p class="eyebrow">Search Results</p>
+        <h1 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 4px 0 0;">
+          {q && loc ? (
+            <>Results for <span style="color: var(--gold);">"{q}"</span> in <span style="color: var(--gold);">"{loc}"</span></>
+          ) : q ? (
+            <>Results for <span style="color: var(--gold);">"{q}"</span></>
+          ) : loc ? (
+            <>Businesses in <span style="color: var(--gold);">"{loc}"</span></>
+          ) : (
+            <>All Businesses</>
+          )}
+        </h1>
+      </div>
+      {(q || loc) && (
+        <span class="badge-pill" style="font-size: 0.82rem;">
+          {results.length} {results.length === 1 ? 'Listing found' : 'Listings found'}
+        </span>
+      )}
+    </div>
+
+    {results.length > 0 ? (
+      <div class="grid grid-biz">
+        {results.map((biz) => <BizCard biz={biz} />)}
+      </div>
+    ) : (
+      <div class="empty" style="padding: 48px 24px;">
+        <p style="font-size: 1.15rem; font-weight: 700; color: var(--text); margin-bottom: 8px;">
+          {(q || loc) ? `No listings found matching your search.` : 'Search for any business, service, or location.'}
+        </p>
+        <p class="muted" style="max-width: 500px; margin: 0 auto 28px;">
+          Try searching for another service like "Dentist", "Restaurant", "Hotel", or browse our popular categories below.
+        </p>
+
+        {categories.length > 0 && (
+          <div style="margin-top: 24px; text-align: left;">
+            <p class="eyebrow" style="text-align: center; margin-bottom: 16px;">Popular Categories</p>
+            <div class="grid grid-cats">
+              {categories.slice(0, 12).map((c) => (
+                <a class="card cat-tile" href={`/category/${c.slug}`}>
+                  <span class="icon">{c.icon ?? '🏷️'}</span>
+                  <strong>{c.name}</strong>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cities.length > 0 && (
+          <div style="margin-top: 36px; text-align: left;">
+            <p class="eyebrow" style="text-align: center; margin-bottom: 16px;">Top Cities</p>
+            <div class="grid grid-cities">
+              {cities.slice(0, 12).map((c) => (
+                <a class="card city-tile" href={`/city/${c.slug}`}>
+                  <strong>{c.name}</strong>
+                  {c.state && <span class="muted">{c.state}</span>}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+  </section>
 </BaseLayout>

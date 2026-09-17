@@ -1,17 +1,140 @@
 ---
-// TODO(Antigravity): implement per PLAN-phase3.md — WS2
-// /near-me — geolocation-based nearby businesses
-// 1. Add getNearbyBusinesses(Astro, lat, lng, limit) to src/lib/data.ts
-//    (POST /rest/v1/rpc/nearby_businesses — verify the RPC signature first)
-// 2. If ?lat&lng present -> SSR nearby results (BizCard grid, distance if the
-//    RPC returns it, deep link /b/{id})
-// 3. If no coords: "Use my location" gold button -> navigator.geolocation ->
-//    redirect to /near-me?lat=..&lng=.. (keeps results SSR/SEO-friendly)
-// 4. Fallback state (denied/unsupported): popular cities links + search form
+// /near-me — geolocation-based nearby businesses (WS2)
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BizCard from '../components/BizCard.astro';
-import { getNearbyBusinesses, getCities } from '../lib/data';
+import MapView from '../components/MapView.astro';
+import { getNearbyBusinesses, getCities, dataReady } from '../lib/data';
+
+const latParam = Astro.url.searchParams.get('lat');
+const lngParam = Astro.url.searchParams.get('lng');
+const lat = latParam ? parseFloat(latParam) : null;
+const lng = lngParam ? parseFloat(lngParam) : null;
+const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
+
+const ready = dataReady(Astro);
+const [nearby, cities] = ready
+  ? await Promise.all([
+      hasCoords ? getNearbyBusinesses(Astro, lat as number, lng as number, 15000) : Promise.resolve([]),
+      getCities(Astro),
+    ])
+  : [[], []];
+
+const mapPoints = nearby
+  .filter((b) => typeof b.latitude === 'number' && typeof b.longitude === 'number')
+  .map((b) => ({
+    lat: b.latitude as number,
+    lng: b.longitude as number,
+    title: b.name,
+    url: `/b/${b.id}`,
+  }));
 ---
-<BaseLayout title="Businesses Near Me — mapsnearme">
-  <!-- TODO: implement -->
+
+<BaseLayout
+  title="Businesses Near Me — Verified Local Services Around You | mapsnearme"
+  description="Discover verified businesses, doctors, restaurants, clinics, and shops closest to your exact location in India."
+  canonical="https://mapsnearme.pages.dev/near-me"
+>
+  <section class="section" style="padding-top: 36px; text-align: center;">
+    <span class="badge-pill">● Live Proximity Search</span>
+    <h1 style="font-size: clamp(2rem, 5vw, 3rem); margin: 16px 0 12px; font-weight: 800;">
+      Find Businesses <span style="font-family: var(--font-serif); font-style: italic; color: var(--gold);">Near You</span>
+    </h1>
+    <p class="muted" style="max-width: 540px; margin: 0 auto 32px; font-size: 1rem;">
+      Click below to detect your current location and instantly view verified businesses within reach.
+    </p>
+
+    <!-- Location detection trigger -->
+    <div style="margin-bottom: 40px;">
+      <button id="loc-btn" class="btn btn-gold" style="padding: 12px 28px; font-size: 1.05rem;">
+        📍 Use My Current Location
+      </button>
+      <div id="loc-status" class="muted" style="margin-top: 10px; font-size: 0.88rem;"></div>
+    </div>
+
+    <!-- Script for geolocation and redirect -->
+    <script is:inline>
+      const locBtn = document.getElementById('loc-btn');
+      const locStatus = document.getElementById('loc-status');
+
+      if (locBtn) {
+        locBtn.addEventListener('click', () => {
+          if (!navigator.geolocation) {
+            locStatus.textContent = 'Geolocation is not supported by your browser.';
+            return;
+          }
+          locBtn.textContent = 'Locating you...';
+          locBtn.style.opacity = '0.7';
+          locStatus.textContent = 'Requesting GPS coordinates...';
+
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude.toFixed(5);
+              const lng = pos.coords.longitude.toFixed(5);
+              locStatus.textContent = 'Found! Loading nearby businesses...';
+              window.location.href = `/near-me?lat=${lat}&lng=${lng}`;
+            },
+            (err) => {
+              locBtn.textContent = '📍 Use My Current Location';
+              locBtn.style.opacity = '1';
+              if (err.code === 1) {
+                locStatus.textContent = 'Location permission was denied. You can search by city or area below.';
+              } else {
+                locStatus.textContent = 'Unable to fetch your coordinates. Please search by city below.';
+              }
+            },
+            { timeout: 10000, enableHighAccuracy: true }
+          );
+        });
+      }
+    </script>
+  </section>
+
+  {hasCoords && (
+    <section class="section" style="padding-top: 0;">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <p class="eyebrow">Local Results</p>
+          <h2 style="margin: 4px 0 0;">Nearby Verified Services</h2>
+        </div>
+        <span class="badge-pill" style="font-size: 0.82rem;">
+          {nearby.length} {nearby.length === 1 ? 'Business found' : 'Businesses found'}
+        </span>
+      </div>
+
+      {mapPoints.length > 0 && (
+        <div style="margin-bottom: 36px;">
+          <MapView points={mapPoints} height="360px" zoom={13} />
+        </div>
+      )}
+
+      {nearby.length > 0 ? (
+        <div class="grid grid-biz">
+          {nearby.map((biz) => <BizCard biz={biz} />)}
+        </div>
+      ) : (
+        <div class="empty">
+          <p style="font-size: 1.1rem; font-weight: 700; color: var(--text);">No listings found within this immediate area.</p>
+          <p class="muted">We are rapidly verifying and adding new listings every week across Indian cities.</p>
+        </div>
+      )}
+    </section>
+  )}
+
+  <!-- Fallback / City Browse section -->
+  <section class="section">
+    <p class="eyebrow">Or Explore by City</p>
+    <h2>Top Cities in India</h2>
+    {cities.length > 0 ? (
+      <div class="grid grid-cities">
+        {cities.slice(0, 24).map((c) => (
+          <a class="card city-tile" href={`/city/${c.slug}`}>
+            <strong>{c.name}</strong>
+            {c.state && <span class="muted">{c.state}</span>}
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="empty">Cities loading...</div>
+    )}
+  </section>
 </BaseLayout>

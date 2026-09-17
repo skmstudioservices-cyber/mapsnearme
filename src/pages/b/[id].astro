@@ -68,7 +68,14 @@ const jsonLd = JSON.stringify({
       </div>
       {biz.tagline && <p style="margin:12px 0 0;"><b>{biz.tagline}</b></p>}
       {biz.description && <p>{biz.description}</p>}
-      {biz.address && <p class="meta">📍 {biz.address}{biz.pin_code ? `, ${biz.pin_code}` : ''}</p>}
+      {biz.address && (
+        <p class="meta">
+          📍 {biz.address}
+          {biz.pin_code && (
+            <>, <a href={`https://digipincode.india-in.workers.dev/pincode/${biz.pin_code}`} target="_blank" rel="noopener" style="color: var(--gold); text-decoration: underline;" title="View Postal & DigiPIN details">{biz.pin_code}</a></>
+          )}
+        </p>
+      )}
 
       <div class="actions">
         {biz.phone && <a class="btn" href={`tel:${biz.phone}`}>📞 Call {biz.phone}</a>}
