@@ -1,14 +1,23 @@
 ---
 // /b/[id] — business listing page (LocalBusiness JSON-LD + map + actions)
+// Phase 4: related businesses in the same city, ad slot.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import BizCard from '../../components/BizCard.astro';
 import MapView from '../../components/MapView.astro';
-import { getBusinessById } from '../../lib/data';
+import AdSlot from '../../components/AdSlot.astro';
+import { getBusinessById, getBusinesses } from '../../lib/data';
 
 const { id } = Astro.params;
 const biz = await getBusinessById(Astro, id ?? '');
 if (!biz) {
   return Astro.redirect('/?notfound=business');
 }
+
+const related = biz.city
+  ? (await getBusinesses(Astro, { citySlug: biz.city.slug, limit: 7 }))
+      .filter((b) => b.id !== biz.id)
+      .slice(0, 6)
+  : [];
 
 const hasCoords = typeof biz.latitude === 'number' && typeof biz.longitude === 'number';
 const jsonLd = JSON.stringify({
@@ -92,6 +101,19 @@ const jsonLd = JSON.stringify({
     {hasCoords && (
       <div class="section">
         <MapView points={[{ lat: biz.latitude as number, lng: biz.longitude as number, title: biz.name }]} height="300px" zoom={15} />
+      </div>
+    )}
+
+    <AdSlot slot="listing-bottom" />
+
+    {related.length > 0 && (
+      <div class="section">
+        <h2 style="font-size: 1.2rem; margin: 24px 0 12px;">
+          More Businesses in {biz.city?.name}
+        </h2>
+        <div class="grid grid-biz">
+          {related.map((b) => <BizCard biz={b} />)}
+        </div>
       </div>
     )}
   </article>
