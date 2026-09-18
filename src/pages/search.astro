@@ -1,5 +1,6 @@
 ---
 // /search — search results page (WS1)
+// Logs internal searches to seo-keywords-db (internal_search table)
 import BaseLayout from '../layouts/BaseLayout.astro';
 import BizCard from '../components/BizCard.astro';
 import { searchBusinesses, getCategories, getCities, dataReady } from '../lib/data';
@@ -15,6 +16,22 @@ const [results, categories, cities] = ready
       getCities(Astro),
     ])
   : [[], [], []];
+
+// Log internal searches — free keyword research (SEO intelligence loop)
+if (q || loc) {
+  try {
+    const seo = (Astro.locals as any)?.runtime?.env?.SEO_DB;
+    if (seo?.prepare) {
+      const term = `${q}${loc ? ' | ' + loc : ''}`.slice(0, 120);
+      await seo
+        .prepare('INSERT INTO internal_search (site, term, results) VALUES (?, ?, ?)')
+        .bind('mapsnearme', term, results.length)
+        .run();
+    }
+  } catch {
+    /* logging must never break search */
+  }
+}
 
 const pageTitle = q
   ? `${q}${loc ? ' in ' + loc : ''} — Search | mapsnearme`
@@ -107,7 +124,7 @@ const pageDesc = `Find verified businesses matching "${q || 'all'}"${loc ? ' in 
               {cities.slice(0, 12).map((c) => (
                 <a class="card city-tile" href={`/city/${c.slug}`}>
                   <strong>{c.name}</strong>
-                  {c.state && <span class="muted">{c.state}</span>}
+                  {c.state && <span class="muted">{c.state}</span>
                 </a>
               ))}
             </div>
