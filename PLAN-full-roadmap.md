@@ -35,13 +35,13 @@ Screenshots of the reference design: `digipincode-india` repo, branch `design-ca
 - Pages: `mapsnearme` → **https://mapsnearme.pages.dev** (this repo; env vars already set), `dashboardmapsnearme` (dashboard repo, Phase 2)
 - Worker (reverse proxy): `mapsnearme` → **https://mapsnearme.india-in.workers.dev** (custom domain later)
 - D1 `mapsnearme-db` (id 03a74322-da9e-485d-af1c-e73249d19039, **apac**) — reserved for ads + internal analytics events (old empty `mapsnearme` DB deleted)
-- KV `MAPSNEARME_ADS_KV` (id 5d3d1232c58e489c8aa016664ca22820) — ad slot content cache (replaces old MAPSNEARME_ADS)
-- KV `SESSION_KV` (id 5356a2ee926848c3a705d1c94d9a542f) — Astro Cloudflare adapter sessions (binding name stays `SESSION` in wrangler.jsonc)
-- D1 `pincode-india-db` (id 74274a3f-9fca-42ec-9fbf-c707ffbc56a4, **apac**) — belongs to the **digipincode-india** repo (see cross-links); being seeded via the d1-apply workflow. The old `pincode-india` DB (wnam) stays live only until the apac DB is fully seeded, then the Worker binding flips and the old DB is deleted.
-- **Deploy:** this repo has NO Cloudflare secrets. Deploys happen via `bootstrap-mapsnearme.yml` in the digipincode-india repo (workflow_dispatch). Do not attempt to deploy from here.
+- KV `MAPSNEARME_ADS_KV` (id 5d3d1232c58e489c8aa016664ca22820) — ad slot content cache (binding added 18 Sep — AdSlot component reads `ad:<slot>` keys)
+- KV `SESSION_KV` (id 5356a2ee926848c3a705d1c94d9a542f) — Astro Cloudflare adapter sessions (binding name stays `SESSION` in wrangler.jsonc; fixed 18 Sep — was pointing at a deleted namespace)
+- D1 `pincode-india-db` (id 74274a3f-9fca-42ec-9fbf-c707ffbc56a4, **apac**) — belongs to the **digipincode-india** repo (see cross-links); seeded via the d1-apply workflow.
+- **Deploy:** THIS repo's own `deploy.yml` runs on every push to main (CF secrets set 18 Sep — CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID in Actions secrets). ~40s per deploy. The bridge workflow `mapsnearme-deploy.yml` in the digipincode-india repo remains as backup.
 
 ### Partner site
-- **digipincode** (pincode/village/DigiPIN directory) → https://digipincode.india-in.workers.dev — repo `digipincode-india`. Its D1 has all-India pincodes + village lists (populated from our KB datasets). Cross-link everything (WS4 of PLAN-phase3.md).
+- **digipincode** (pincode/village/DigiPIN directory) → https://digipincode.india-in.workers.dev — repo `digipincode-india`. Its D1 has all-India pincodes + village lists. Cross-linked (city pages → digipincode/city, business pages → digipincode/pincode).
 
 ## 2. Analytics plan (internal + external)
 
@@ -54,7 +54,7 @@ Goal: know what users search and click, then feed it back into content.
    - `listing_view` {business_id, category, city} — /b/[id]
    - `contact_click` {business_id, type: call|whatsapp|website|direction}
    - `category_browse` / `city_browse` — category/city pages
-3. **Google Search Console**: verify mapsnearme.pages.dev (owner action; GSC account already in use), submit `/sitemap.xml`, monitor queries. Monthly: export GSC queries → they become the keyword priority list for new city/category content (same loop as the pincode site's `seo/gsc-pincode-keywords.csv`).
+3. **Google Search Console**: ✅ DONE 18 Sep — verified + /sitemap.xml submitted.
 4. **Internal event log** (Phase 2+): D1 table `events` in `mapsnearme-db` (type, business_id, meta, created_at) written via a small `/api/track` endpoint — powers "trending near you" and business-owner lead quality signals. Keep writes tiny; respect free-tier limits.
 
 ## 3. Phases
@@ -65,26 +65,27 @@ Adapter 5/12 downgrade (404 fix), SESSION KV binding, env vars, working Pages de
 ### Phase 1 — Real data + premium redesign — ✅ DONE
 Supabase live data (158 businesses / 32 cities / 16 categories), dark+gold premium UI live on mapsnearme.pages.dev.
 
-### Phase 3 — Search, near-me, SEO — 🔨 SCAFFOLDED (current branch, see PLAN-phase3.md)
-/search (fixes the homepage 404), /near-me (PostGIS RPC), sitemap.xml, about/privacy/terms, digipincode cross-links.
+### Phase 3 — Search, near-me, SEO — ✅ DONE (18 Sep)
+Merged antigravity-build → main, auto-deployed. /search (200), /near-me, /sitemap.xml (200, submitted to GSC), about/privacy/terms, digipincode cross-links.
 
-### Phase 2 — Dashboard (repo: dashboardmapsnearme, vinext/Next.js)
+### Phase 4 — SEO & content flywheel — ✅ CORE DONE (18 Sep)
+- ✅ Sitemap submitted to GSC; internal linking city↔category↔business↔search (combo links: "/search?q=Category&loc=City") + digipincode cross-links
+- ✅ Structured data: LocalBusiness JSON-LD on /b/[id], BreadcrumbList + ItemList JSON-LD on city/category pages
+- ✅ Related same-city businesses on /b/[id]
+- ⏳ skm-ai-worker AI summaries for thin listings (Workers AI) — next
+- ⏳ Keyword-driven city/category landing pages (GSC data loop) — ongoing as data arrives
+
+### Phase 5 — Monetize — 🔨 SCAFFOLDED (18 Sep)
+- ✅ AdSlot component live on city/category/business pages — serves from KV `MAPSNEARME_ADS_KV` (set via `wrangler kv key put --namespace-id=5d3d1232c58e489c8aa016664ca22820 "ad:<slot>" '{...json}'`; slots: city-top, category-top, listing-bottom)
+- ⏳ Google AdSense once traffic justifies it (privacy page ready)
+- ⏳ Featured/verified business subscriptions via the dashboard (Phase 2 dependency)
+
+### Phase 2 — Dashboard (repo: dashboardmapsnearme, vinext/Next.js) — ⏳ PENDING (next big build)
 - Supabase Auth (email magic link) for business owners
 - Claim-a-listing flow (verify phone/OTP later), edit listing, upload logo (Supabase Storage — free, replaces the dropped R2 plan)
 - Leads inbox (table `leads`), feedback moderation (`feedback`), local leaderboard (`leaderboard_scores`) — all RLS: owners see only their rows
 - Mount on CF Pages `dashboardmapsnearme`; same dark+gold design language
 
-### Phase 4 — SEO & content flywheel
-- Sitemaps submitted to GSC; internal linking city↔category↔business↔pincode(digipincode)
-- skm-ai-worker AI summaries/descriptions for thin listings (Workers AI, free tier)
-- Keyword-driven city/category landing pages (GSC data loop, same as digipincode)
-- Structured data: LocalBusiness JSON-LD on /b/[id], BreadcrumbList everywhere
-
-### Phase 5 — Monetize
-- Ad slots served from KV `MAPSNEARME_ADS_KV` (self-serve, no third-party dependency at first)
-- Google AdSense once traffic justifies it (privacy page already ready)
-- Featured/verified business subscriptions via the dashboard (leads + leaderboard as proof)
-
 ## 4. Rules (recap — full list in AGENTS.md)
-- Astro 5 + adapter ^12 LOCKED. Design LOCKED. data.ts is the only DB file. Free tier only. No data.gov.in / attribution-required datasets. Deploy only from main merge via the digipincode-india repo workflows.
+- Astro 5 + adapter ^12 LOCKED. Design LOCKED. data.ts is the only DB file. Free tier only. No data.gov.in / attribution-required datasets. Deploys run from this repo's own deploy.yml on push to main (secrets set); digipincode-india repo workflows are backup.
 - Databases only in India region (Supabase Mumbai / D1 apac), names end with -db or _KV.
