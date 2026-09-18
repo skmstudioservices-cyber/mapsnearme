@@ -45,5 +45,23 @@ const jsonLd = JSON.stringify({
     ) : (
       <div class="empty">Is city mein abhi listings nahi hain.</div>
     )}
+
+    <!-- WS4: Cross-link with digipincode -->
+    <div class="card pad" style="margin-top: 48px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <h3 style="margin: 0 0 4px; font-size: 1.1rem;">Explore Postal Pincodes in {city.name}</h3>
+        <p class="muted" style="margin: 0; font-size: 0.9rem;">
+          View official post office directories, pin codes and DigiPIN codes for {city.name}.
+        </p>
+      </div>
+      <a
+        class="btn btn-ghost"
+        href={`https://digipincode.india-in.workers.dev/city/${city.slug}`}
+        target="_blank"
+        rel="noopener"
+      >
+        View Pincodes in {city.name} →
+      </a>
+    </div>
   </section>
 </BaseLayout>
