@@ -1,16 +1,21 @@
 ---
 // /city/[slug] — city page: businesses + map (pSEO template)
+// Phase 4: category-combo internal links, ad slot.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import BizCard from '../../components/BizCard.astro';
 import MapView from '../../components/MapView.astro';
-import { getCityBySlug, getBusinesses } from '../../lib/data';
+import AdSlot from '../../components/AdSlot.astro';
+import { getCityBySlug, getBusinesses, getCategories } from '../../lib/data';
 
 const { slug } = Astro.params;
 const city = await getCityBySlug(Astro, slug ?? '');
 if (!city) {
   return Astro.redirect('/?notfound=city');
 }
-const businesses = await getBusinesses(Astro, { citySlug: slug, limit: 48 });
+const [businesses, categories] = await Promise.all([
+  getBusinesses(Astro, { citySlug: slug, limit: 48 }),
+  getCategories(Astro),
+]);
 const mapPoints = businesses
   .filter((b) => typeof b.latitude === 'number' && typeof b.longitude === 'number')
   .map((b) => ({ lat: b.latitude as number, lng: b.longitude as number, title: b.name, url: `/b/${b.id}` }));
@@ -35,6 +40,7 @@ const jsonLd = JSON.stringify({
   <section class="section">
     <h1 style="margin:16px 0 4px;">Businesses in {city.name}</h1>
     {city.state && <p class="muted">{city.state}</p>}
+    <AdSlot slot="city-top" />
     <div class="section">
       <MapView points={mapPoints} />
     </div>
@@ -44,6 +50,25 @@ const jsonLd = JSON.stringify({
       </div>
     ) : (
       <div class="empty">Is city mein abhi listings nahi hain.</div>
+    )}
+
+    {categories.length > 0 && (
+      <div class="card pad" style="margin-top: 32px;">
+        <h3 style="margin: 0 0 4px; font-size: 1.1rem;">Browse {city.name} by Category</h3>
+        <p class="muted" style="margin: 0; font-size: 0.9rem;">
+          Popular business categories in {city.name}:
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px;">
+          {categories.map((c) => (
+            <a
+              class="btn btn-ghost"
+              href={`/search?q=${encodeURIComponent(c.name)}&loc=${encodeURIComponent(city.name)}`}
+            >
+              {c.icon ?? ''} {c.name} in {city.name}
+            </a>
+          ))}
+        </div>
+      </div>
     )}
 
     <!-- WS4: Cross-link with digipincode -->
