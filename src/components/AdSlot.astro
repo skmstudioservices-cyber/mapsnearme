@@ -1,0 +1,60 @@
+---
+// AdSlot — Phase 5 self-serve ad slot, content served from MAPSNEARME_ADS_KV.
+// Usage: <AdSlot slot="city-top" /> — renders nothing when the slot is empty.
+//
+// Set a slot (from any machine with CF access):
+//   wrangler kv key put --namespace-id=5d3d1232c58e489c8aa016664ca22820 \
+//     "ad:city-top" '{"title":"Jaipur Taxi Tours","url":"https://example.com","text":"Full-day tours from ₹1,999"}'
+// Remove: wrangler kv key delete --namespace-id=... "ad:city-top"
+interface Props {
+  slot: string;
+}
+const { slot } = Astro.props;
+
+type Ad = { title?: string; url?: string; text?: string; html?: string };
+let ad: Ad | null = null;
+const kv = (Astro.locals as any)?.runtime?.env?.MAPSNEARME_ADS_KV;
+if (kv && typeof kv.get === 'function') {
+  try {
+    const raw = await kv.get(`ad:${slot}`);
+    if (raw) ad = JSON.parse(raw) as Ad;
+  } catch {
+    /* bad JSON in KV — ignore */
+  }
+}
+---
+
+{ad && (
+  <aside class="adslot" data-slot={slot}>
+    <span class="adslot-label">Sponsored</span>
+    {ad.title && ad.url ? (
+      <a href={ad.url} target="_blank" rel="noopener sponsored">
+        <strong>{ad.title}</strong>{ad.text && <span> — {ad.text}</span>}
+      </a>
+    ) : (
+      ad.html && <span set:html={ad.html} />
+    )}
+  </aside>
+)}
+
+<style>
+  .adslot {
+    border: 1px dashed rgba(217, 165, 60, 0.45);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 24px 0;
+    font-size: 0.92rem;
+    background: rgba(217, 165, 60, 0.06);
+  }
+  .adslot-label {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #d9a53c;
+    margin-bottom: 6px;
+  }
+  .adslot a {
+    color: inherit;
+  }
+</style>
