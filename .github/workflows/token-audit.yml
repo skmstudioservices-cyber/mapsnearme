@@ -1,0 +1,39 @@
+name: CF Token Permission Audit
+
+# Read-only checks of what this Cloudflare API token can access.
+# Never prints the token itself.
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Test each API capability
+        run: |
+          api() {
+            local label="$1" path="$2"
+            code=$(curl -s -o /tmp/resp.json -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4$path")
+            ok=$(grep -o '"success":\s*true' /tmp/resp.json | head -1)
+            echo "$label -> HTTP $code $ok"
+          }
+          echo "== token verify =="
+          code=$(curl -s -o /tmp/v.json -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "verify -> HTTP $code $(cat /tmp/v.json | head -c 200)"
+          echo "== account-level =="
+          api "D1 list          " "/accounts/$CF_ACCOUNT/d1/database?per_page=3"
+          api "D1 create (dry)  " "/accounts/$CF_ACCOUNT/d1/database" 
+          api "KV list          " "/accounts/$CF_ACCOUNT/storage/kv/namespaces?per_page=3"
+          api "Workers list     " "/accounts/$CF_ACCOUNT/workers/scripts"
+          api "Pages projects   " "/accounts/$CF_ACCOUNT/pages/projects?per_page=3"
+          api "Workers routes   " "/accounts/$CF_ACCOUNT/workers/domains"
+          api "R2 buckets       " "/accounts/$CF_ACCOUNT/r2/buckets?per_page=3"
+          api "Account info     " "/accounts/$CF_ACCOUNT"
+          echo "== zone-level (zone-scoped APIs) =="
+          api "Zones list       " "/zones?per_page=3"
+          echo "== sample D1 query (seo-keywords-db) =="
+          code=$(curl -s -o /tmp/q.json -w '%{http_code}' -X POST -H "Authorization: Bearer $CF_TOKEN" -H 'Content-Type: application/json' "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/d1/database/b3d0300d-7362-489e-91e9-d2dfece64b63/query" --data '{"sql":"SELECT COUNT(*) as n FROM keywords"}')
+          echo "D1 query -> HTTP $code $(cat /tmp/q.json | head -c 250)"
