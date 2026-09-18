@@ -12,5 +12,12 @@
       "binding": "MAPSNEARME_ADS_KV",
       "id": "5d3d1232c58e489c8aa016664ca22820"
     }
+  ],
+  "d1_databases": [
+    {
+      "binding": "SEO_DB",
+      "database_name": "seo-keywords-db",
+      "database_id": "b3d0300d-7362-489e-91e9-d2dfece64b63"
+    }
   ]
 }
