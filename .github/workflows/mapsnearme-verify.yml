@@ -1,0 +1,26 @@
+name: Verify mapsnearme pages
+
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Raw HTML checks (homepage + search)
+        run: |
+          H=$(curl -s --max-time 30 "https://mapsnearme.pages.dev/?cb=$(date +%s)")
+          echo "--- homepage checks ---"
+          echo "explore-popular-services: $(echo "$H" | grep -c 'Explore Popular Services')"
+          echo "categories-placeholder: $(echo "$H" | grep -c 'Categories setup')"
+          echo "cat-tiles: $(echo "$H" | grep -c 'cat-tile')"
+          echo "cities-placeholder: $(echo "$H" | grep -c 'Cities setup')"
+          echo "city-tiles: $(echo "$H" | grep -c 'city-tile')"
+          echo "states-shown: $(echo "$H" | grep -o 'Maharashtra\|Uttar Pradesh\|Karnataka' | sort -u | tr '\n' ' ' )"
+          echo "stats-numbers: $(echo "$H" | grep -o 'class="num">[^<]*' | head -4 | tr '\n' ' ')"
+          echo "--- search empty state checks ---"
+          S=$(curl -s --max-time 30 "https://mapsnearme.pages.dev/search?q=Dentist&loc=Delhi&cb=$(date +%s)")
+          echo "popular-categories-header: $(echo "$S" | grep -c 'Popular Categories')"
+          echo "top-cities-header: $(echo "$S" | grep -c 'Top Cities')"
+          echo "cat-tiles-search: $(echo "$S" | grep -c 'cat-tile')"
+          echo "city-tiles-search: $(echo "$S" | grep -c 'city-tile')"
