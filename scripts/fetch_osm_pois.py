@@ -107,7 +107,7 @@ ENDPOINTS = [
     "https://overpass.private.coffee/api/interpreter",
 ]
 
-QUERY_TMPL = """[out:json][timeout:90];
+QUERY_TMPL = """[out:json][timeout:60];
 (
   nwr(around:300,{lat},{lon})[name][shop];
   nwr(around:300,{lat},{lon})[name][amenity~"^(restaurant|cafe|fast_food|bar|pub|ice_cream|food_court|bakery|pharmacy|bank|hospital|clinic|doctors|dentist|fuel|marketplace|atm)$"];
@@ -121,14 +121,13 @@ def overpass(query, market_slug):
     data = urllib.parse.urlencode({"data": query}).encode()
     last_err = None
     for ep in ENDPOINTS:
-        for attempt in range(2):
-            try:
-                req = urllib.request.Request(ep, data=data, headers={"User-Agent": "mapsnearme-poi-fetch/1.0"})
-                with urllib.request.urlopen(req, timeout=120) as r:
-                    return json.loads(r.read().decode())
-            except Exception as e:
-                last_err = e
-                time.sleep(4)
+        try:
+            req = urllib.request.Request(ep, data=data, headers={"User-Agent": "mapsnearme-poi-fetch/1.0"})
+            with urllib.request.urlopen(req, timeout=45) as r:
+                return json.loads(r.read().decode())
+        except Exception as e:
+            last_err = e
+            time.sleep(1.5)
     print(f"WARN: failed market {market_slug}: {last_err}", flush=True)
     return None
 
@@ -162,9 +161,9 @@ for i, (slug, lat, lon) in enumerate(MARKETS):
             out.append(keep)
             n += 1
     print(f"[{i+1}/{len(MARKETS)}] {slug}: {n} named POIs", flush=True)
-    time.sleep(2.5)
+    # incremental save so even a partial run keeps data
+    with open("data/osm-pois.json", "w") as f:
+        json.dump(out, f, ensure_ascii=False)
+    time.sleep(2)
 
-os.makedirs("data", exist_ok=True)
-with open("data/osm-pois.json", "w") as f:
-    json.dump(out, f, ensure_ascii=False)
 print(f"TOTAL: {len(out)} POIs written to data/osm-pois.json", flush=True)
