@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fetch real, named shops around each market from OpenStreetMap via Overpass.
 Writes data/osm-pois.json (compact) and commits it back to the repo.
-Run from .github/workflows/osm-poi-fetch.yml (sandbox proxy blocks Overpass).
+Resumable: markets already present in the snapshot are skipped.
 """
 import json, time, urllib.request, urllib.parse, os, sys
 
@@ -133,7 +133,19 @@ def overpass(query, market_slug):
 
 os.makedirs("data", exist_ok=True)
 out = []
+done_slugs = set()
+if os.path.exists("data/osm-pois.json"):
+    try:
+        prev = json.load(open("data/osm-pois.json"))
+        out = prev
+        done_slugs = {p.get("m") for p in prev}
+        print(f"resume: {len(done_slugs)} markets already fetched", flush=True)
+    except Exception:
+        pass
 for i, (slug, lat, lon) in enumerate(MARKETS):
+    if slug in done_slugs:
+        print(f"[skip] {slug}: already in snapshot", flush=True)
+        continue
     res = overpass(QUERY_TMPL.format(lat=lat, lon=lon), slug)
     n = 0
     if res and res.get("elements"):
