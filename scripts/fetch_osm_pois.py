@@ -131,6 +131,7 @@ def overpass(query, market_slug):
     print(f"WARN: failed market {market_slug}: {last_err}", flush=True)
     return None
 
+os.makedirs("data", exist_ok=True)
 out = []
 for i, (slug, lat, lon) in enumerate(MARKETS):
     res = overpass(QUERY_TMPL.format(lat=lat, lon=lon), slug)
