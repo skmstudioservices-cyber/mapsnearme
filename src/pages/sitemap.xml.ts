@@ -1,5 +1,9 @@
 // GET /sitemap.xml — Dynamic XML Sitemap (WS3)
-import { getCities, getCategories } from '../lib/data';
+// 2026-09-22: now also includes business listing pages (/b/{id}) via
+// getBusinesses() — mirrors exactly what the site itself lists, so Google
+// can discover and index every business page (GSC showed only city/category
+// URLs before, business pages were absent from the sitemap).
+import { getCities, getCategories, getBusinesses } from '../lib/data';
 
 export async function GET(context: any): Promise<Response> {
   const baseUrl = 'https://mapsnearme.pages.dev';
@@ -15,9 +19,10 @@ export async function GET(context: any): Promise<Response> {
   ];
 
   // 2. Fetch dynamic routes
-  const [cities, categories] = await Promise.all([
+  const [cities, categories, businesses] = await Promise.all([
     getCities(context),
     getCategories(context),
+    getBusinesses(context, { limit: 500 }),
   ]);
 
   const cityUrls = cities.map((c) => ({
@@ -32,15 +37,21 @@ export async function GET(context: any): Promise<Response> {
     changefreq: 'weekly',
   }));
 
+  const businessUrls = businesses.map((b) => ({
+    loc: `${baseUrl}/b/${b.id}`,
+    priority: '0.7',
+    changefreq: 'weekly',
+  }));
+
   // Combine and format
-  const allUrls = [...staticUrls, ...cityUrls, ...categoryUrls];
+  const allUrls = [...staticUrls, ...cityUrls, ...categoryUrls, ...businessUrls];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${allUrls
   .map(
     (u) => `  <url>
-    <loc>${u.loc.replace(/&/g, '&amp;')}</loc>
+    <loc>${u.loc.replace(/&/g, '&')}</loc>
     <changefreq>${u.changefreq}</changefreq>
     <priority>${u.priority}</priority>
   </url>`
