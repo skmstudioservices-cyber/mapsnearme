@@ -1,9 +1,7 @@
 // GET /sitemap.xml — Dynamic XML Sitemap (WS3)
-// 2026-09-22: now also includes business listing pages (/b/{id}) via
-// getBusinesses() — mirrors exactly what the site itself lists, so Google
-// can discover and index every business page (GSC showed only city/category
-// URLs before, business pages were absent from the sitemap).
-import { getCities, getCategories, getBusinesses } from '../lib/data';
+// 2026-09-22: business listing pages now paginated (PostGREST caps ~1000
+// rows per request, so we page through getBusinessIdsPaged until exhausted).
+import { getCities, getCategories, getBusinessIdsPaged } from '../lib/data';
 
 export async function GET(context: any): Promise<Response> {
   const baseUrl = 'https://mapsnearme.pages.dev';
@@ -19,10 +17,9 @@ export async function GET(context: any): Promise<Response> {
   ];
 
   // 2. Fetch dynamic routes
-  const [cities, categories, businesses] = await Promise.all([
+  const [cities, categories] = await Promise.all([
     getCities(context),
     getCategories(context),
-    getBusinesses(context, { limit: 500 }),
   ]);
 
   const cityUrls = cities.map((c) => ({
@@ -37,11 +34,21 @@ export async function GET(context: any): Promise<Response> {
     changefreq: 'weekly',
   }));
 
-  const businessUrls = businesses.map((b) => ({
-    loc: `${baseUrl}/b/${b.id}`,
-    priority: '0.7',
-    changefreq: 'weekly',
-  }));
+  // 3. Business listing pages — paged, includes every business the site lists
+  const businessUrls: Array<{ loc: string; priority: string; changefreq: string }> = [];
+  const PAGE = 1000;
+  const HARD_CAP = 30000; // safety cap
+  for (let offset = 0; offset < HARD_CAP; offset += PAGE) {
+    const ids = await getBusinessIdsPaged(context, offset, PAGE);
+    for (const b of ids) {
+      businessUrls.push({
+        loc: `${baseUrl}/b/${b.id}`,
+        priority: '0.6',
+        changefreq: 'weekly',
+      });
+    }
+    if (ids.length < PAGE) break;
+  }
 
   // Combine and format
   const allUrls = [...staticUrls, ...cityUrls, ...categoryUrls, ...businessUrls];

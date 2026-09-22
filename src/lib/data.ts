@@ -60,34 +60,43 @@ async function sb(
   }
 }
 
+// ----------------------------------------------------------
+// Cities & categories
+// ----------------------------------------------------------
+
 export async function getCities(Astro: EnvLike): Promise<City[]> {
-  const r = await sb(Astro, 'cities?select=id,name,slug,state&order=name.asc');
+  const r = await sb(Astro, 'cities?select=id,name,slug&order=name');
   if (!r || !r.ok) return [];
   return (await r.json()) as City[];
 }
 
 export async function getCityBySlug(Astro: EnvLike, slug: string): Promise<City | null> {
-  const r = await sb(Astro, `cities?select=id,name,slug,state&slug=eq.${encodeURIComponent(slug)}`);
+  const r = await sb(Astro, `cities?select=id,name,slug&slug=eq.${encodeURIComponent(slug)}`);
   if (!r || !r.ok) return null;
   const rows = (await r.json()) as City[];
   return rows[0] ?? null;
 }
 
 export async function getCategories(Astro: EnvLike): Promise<Category[]> {
-  const r = await sb(Astro, 'categories?select=id,name,slug,icon&order=name.asc');
+  const r = await sb(Astro, 'categories?select=id,name,slug&order=name');
   if (!r || !r.ok) return [];
   return (await r.json()) as Category[];
 }
 
 export async function getCategoryBySlug(Astro: EnvLike, slug: string): Promise<Category | null> {
-  const r = await sb(Astro, `categories?select=id,name,slug,icon&slug=eq.${encodeURIComponent(slug)}`);
+  const r = await sb(Astro, `categories?select=id,name,slug&slug=eq.${encodeURIComponent(slug)}`);
   if (!r || !r.ok) return null;
   const rows = (await r.json()) as Category[];
   return rows[0] ?? null;
 }
 
-const BIZ_SELECT =
-  'id,name,slug,address,pin_code,latitude,longitude,phone,whatsapp,website,description,tagline,avg_rating,review_count,logo_url,cover_url,is_verified,is_featured,city:cities(name,slug),category:categories(name,slug)';
+// ----------------------------------------------------------
+// Businesses
+// ----------------------------------------------------------
+
+const BIZ_SELECT = `*,
+  city:cities ( name, slug ),
+  category:categories ( name, slug )`;
 
 export async function getBusinesses(
   Astro: EnvLike,
@@ -95,6 +104,7 @@ export async function getBusinesses(
 ): Promise<Business[]> {
   const limit = opts.limit ?? 24;
   let q = `businesses?select=${BIZ_SELECT}&order=is_verified.desc,avg_rating.desc.nullslast&limit=${limit}`;
+
   // filters via joins need ids, so resolve slugs first
   if (opts.citySlug) {
     const city = await getCityBySlug(Astro, opts.citySlug);
@@ -106,6 +116,7 @@ export async function getBusinesses(
     if (!cat) return [];
     q += `&category_id=eq.${cat.id}`;
   }
+
   const r = await sb(Astro, q);
   if (!r || !r.ok) return [];
   return (await r.json()) as Business[];
@@ -184,4 +195,18 @@ export async function countBusinesses(Astro: EnvLike): Promise<number> {
   return total ? Number(total) || 0 : 0;
 }
 
-
+// Paged id fetch for the sitemap — PostGREST caps rows per request,
+// so the sitemap pages through all businesses in chunks (order=id is
+// stable across pages which matters for correctness of the paging loop).
+export async function getBusinessIdsPaged(
+  Astro: EnvLike,
+  offset: number,
+  limit = 1000
+): Promise<Array<{ id: string }>> {
+  const r = await sb(
+    Astro,
+    `businesses?select=id&order=id&limit=${limit}&offset=${offset}`
+  );
+  if (!r || !r.ok) return [];
+  return (await r.json()) as Array<{ id: string }>;
+}
