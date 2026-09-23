@@ -1,0 +1,35 @@
+name: Pages Inspect
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: robots sitemap line + inspect sitemap source
+        run: |
+          set -e
+          echo "=== sitemap-related source files ==="
+          find src public -iname "*sitemap*" -o -iname "robots*" 2>/dev/null | head -10
+          for f in $(find src/pages -iname "*sitemap*" 2>/dev/null | head -2); do
+            echo "--- head of $f ---"
+            head -30 "$f"
+            echo "prerender flag: $(grep -n 'prerender' $f || echo 'NOT SET')"
+          done
+          echo "=== current robots.txt tail ==="
+          tail -5 public/robots.txt 2>/dev/null || echo "no public/robots.txt"
+          echo "=== astro.config ==="
+          head -40 astro.config.mjs
+          if ! grep -q "Sitemap:" public/robots.txt 2>/dev/null; then
+            printf "\nSitemap: https://mapsnearme.pages.dev/sitemap.xml\n" >> public/robots.txt
+            git config user.name "skm-bot" && git config user.email "skmstudio.services@gmail.com"
+            git add public/robots.txt && git commit -m "fix: add Sitemap directive to robots.txt (discovery)" && git push && echo "ROBOTS COMMITTED"
+          else
+            echo "Sitemap line already present"
+          fi
