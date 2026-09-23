@@ -9,7 +9,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: full sitemap source
+      - name: URL patterns in sitemap
         run: |
           set -e
-          sed -n '30,140p' src/pages/sitemap.xml.ts
+          grep -n "categoryUrls\|businessUrls\|/b/\|/category\|loc:" src/pages/sitemap.xml.ts | head -25
