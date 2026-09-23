@@ -3,13 +3,24 @@ name: Pages Inspect
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: URL patterns in sitemap
+      - name: Remove dynamic sitemap route (static file now in public/)
         run: |
           set -e
-          grep -n "categoryUrls\|businessUrls\|/b/\|/category\|loc:" src/pages/sitemap.xml.ts | head -25
+          if [ -f src/pages/sitemap.xml.ts ]; then
+            git config user.name "skm-bot" && git config user.email "skmstudio.services@gmail.com"
+            git rm src/pages/sitemap.xml.ts
+            git commit -m "fix: remove dynamic sitemap route - replaced by static public/sitemap.xml (was 404 during quota-dead windows and burned quota on every fetch)"
+            git push
+            echo "ROUTE REMOVED"
+          else
+            echo "already removed"
+          fi
