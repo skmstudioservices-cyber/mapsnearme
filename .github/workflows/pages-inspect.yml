@@ -3,24 +3,18 @@ name: Pages Inspect
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - name: Remove dynamic sitemap route (static file now in public/)
+      - name: verify static sitemap live
         run: |
-          set -e
-          if [ -f src/pages/sitemap.xml.ts ]; then
-            git config user.name "skm-bot" && git config user.email "skmstudio.services@gmail.com"
-            git rm src/pages/sitemap.xml.ts
-            git commit -m "fix: remove dynamic sitemap route - replaced by static public/sitemap.xml (was 404 during quota-dead windows and burned quota on every fetch)"
-            git push
-            echo "ROUTE REMOVED"
-          else
-            echo "already removed"
-          fi
+          set +e
+          for p in "sitemap.xml" "robots.txt"; do
+            code=$(curl -s -o /tmp/f -w "%{http_code}" --max-time 25 -A "Mozilla/5.0" "https://mapsnearme.pages.dev/$p")
+            echo "/$p -> HTTP $code ($(wc -c < /tmp/f)b)"
+          done
+          echo "--- robots tail ---"; curl -s --max-time 20 "https://mapsnearme.pages.dev/robots.txt" | tail -3
+          echo "--- sitemap head ---"; curl -s --max-time 25 "https://mapsnearme.pages.dev/sitemap.xml" | head -c 300
+          echo; echo "--- sitemap URL count ---"; curl -s --max-time 30 "https://mapsnearme.pages.dev/sitemap.xml" | grep -c "<loc>"
