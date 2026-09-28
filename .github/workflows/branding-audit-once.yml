@@ -1,0 +1,68 @@
+name: Branding Audit Once
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Branding audit - 4 sites
+        run: |
+          set -u
+          CB=$(date +%s)
+          FAIL=0
+
+          audit_site () {
+            NAME="$1"; URL="$2"
+            echo "===== SITE: $NAME ($URL) ====="
+            H=$(curl -sL --max-time 30 -A "Mozilla/5.0" "$URL/?cb=$CB")
+            if [ -z "$H" ]; then
+              echo "$NAME | homepage | UNREACHABLE | FAIL"
+              FAIL=1
+              return
+            fi
+            echo "$NAME | title value | $(echo "$H" | grep -o '<title[^>]*>[^<]*</title>' | head -1)"
+            for M in 'og:site_name' 'theme-color'; do
+              if echo "$H" | grep -qi "$M"; then
+                echo "$NAME | meta $M | PASS | $(echo "$H" | grep -o "<meta[^>]*$M[^>]*>" | head -1)"
+              else
+                echo "$NAME | meta $M | FAIL"
+                FAIL=1
+              fi
+            done
+            if echo "$H" | grep -Eqi '"@type"[[:space:]]*:[[:space:]]*"WebSite"'; then
+              echo "$NAME | WebSite JSON-LD | PASS"
+            else
+              echo "$NAME | WebSite JSON-LD | FAIL"
+              FAIL=1
+            fi
+            for A in favicon.svg favicon.ico apple-touch-icon.png og-image.png; do
+              C=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 -A "Mozilla/5.0" "$URL/$A?cb=$CB")
+              if [ "$C" = "200" ]; then
+                echo "$NAME | asset /$A | 200 PASS"
+              else
+                echo "$NAME | asset /$A | $C FAIL"
+                FAIL=1
+              fi
+            done
+          }
+
+          audit_site digipincode-workers https://digipincode.india-in.workers.dev
+          audit_site digipincode-pages https://digipincode.pages.dev
+          audit_site mapsnearme-pages https://mapsnearme.pages.dev
+          audit_site examstatus-workers https://examstatus.india-in.workers.dev
+
+          echo "===== canonical check: digipincode.pages.dev ====="
+          HP=$(curl -sL --max-time 30 -A "Mozilla/5.0" "https://digipincode.pages.dev/?cb=$CB")
+          CANON=$(echo "$HP" | grep -o '<link rel="canonical" href="[^"]*"' | head -1)
+          echo "canonical tag: ${CANON:-NONE}"
+          if echo "$CANON" | grep -q 'digipincode\.india-in\.workers\.dev'; then
+            echo "digipincode-pages | canonical -> workers.dev | PASS"
+          else
+            echo "digipincode-pages | canonical -> workers.dev | FAIL"
+            FAIL=1
+          fi
+
+          echo "===== SUMMARY fail_flag=$FAIL ====="
+          exit $FAIL
