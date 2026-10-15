@@ -26,7 +26,7 @@ const {
 <!doctype html>
 <html lang="en">
   <head>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NH42KZNW9F"></script>
+<script async src="https://www.googletagmanager.com/gtag/js"></script>
 <script is:inline>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NH42KZNW9F');</script>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -50,7 +50,7 @@ const {
     <script type="application/ld+json" set:html={JSON.stringify({ "@context": "https://schema.org", "@type": "WebSite", "name": "MapsNearMe", "url": "https://mapsnearme.pages.dev/" })} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2" rel="stylesheet" />
     <slot name="head" />
   </head>
   <body>
@@ -109,5 +109,6 @@ const {
         </div>
       </div>
     </footer>
-  </body>
+  <script>(function(){try{if(!navigator.sendBeacon)return;var E='https://digipincode.india-in.workers.dev/api/collect',t0=Date.now(),ms=0,s=false;window.addEventListener('scroll',function(){try{var h=document.documentElement.scrollHeight-window.innerHeight,p=h>0?Math.round(window.scrollY/h*100):0;if(p>ms)ms=p}catch(e){}},{passive:true});function send(){if(s)return;s=true;try{navigator.sendBeacon(E,JSON.stringify({host:location.hostname,path:location.pathname,ref:document.referrer||'',event:'view',dwell:Math.round((Date.now()-t0)/1000),scroll:ms}))}catch(e){}}window.addEventListener('pagehide',send,{once:true});document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')send()});}catch(e){}})();</script>
+</body>
 </html>
