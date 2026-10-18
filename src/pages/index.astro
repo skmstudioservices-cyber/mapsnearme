@@ -6,14 +6,20 @@ import BizCard from '../components/BizCard.astro';
 import { getCities, getCategories, getBusinesses, countBusinesses, dataReady } from '../lib/data';
 
 const ready = dataReady(Astro);
-const [cities, categories, featured, bizCount] = ready
-  ? await Promise.all([
+// D1/data resilience (18 Oct 2026): never 500/404 if the data layer fails.
+let cities: any[] = [], categories: any[] = [], featured: any[] = [], bizCount = 0;
+if (ready) {
+  try {
+    [cities, categories, featured, bizCount] = await Promise.all([
       getCities(Astro),
       getCategories(Astro),
       getBusinesses(Astro, { limit: 6 }),
       countBusinesses(Astro),
-    ])
-  : [[], [], [], 0];
+    ]);
+  } catch (e) {
+    cities = []; categories = []; featured = []; bizCount = 0;
+  }
+}
 ---
 
 <BaseLayout
